@@ -1,0 +1,461 @@
+ecommerce-website/
+├── backend/
+│   ├── app.js
+│   ├── models/
+│   │   └── productModel.js
+│   ├── routes/
+│   │   └── productRoutes.js
+│   ├── controllers/
+│   │   └── productController.js
+│   ├── config/
+│   │   └── db.js
+│   ├── sockets/
+│   │   └── chat.js
+│   └── package.json
+
+├── frontend/
+
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Product.js
+│   │   │   ├── Chat.js
+│   │   ├── pages/
+│   │   │   ├── HomePage.js
+│   │   │   ├── ChatPage.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   └── package.json
+└── README.md
+///Backend (backend/)
+
+npm install socket.io
+
+module.exports = function (io) {
+  io.on('connection', (socket) => {
+    console.log('New client connected');
+
+    socket.on('chat message', (msg) => {
+      io.emit('chat message', msg);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Client disconnected');
+    });
+  });
+};
+
+
+const express = require('express');
+const http = require('http');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const productRoutes = require('./routes/productRoutes');
+const socketIo = require('socket.io');
+const chatSocket = require('./sockets/chat');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+connectDB();
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use('/api/products', productRoutes);
+
+// Initialize sockets
+chatSocket(io);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+Frontend (frontend/)
+
+
+cd frontend
+npm install socket.io-client
+Chat Component (frontend/src/components/Chat.js)
+
+
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
+
+const Chat = () => {
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    socket.on('chat message', (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    });
+
+    return () => {
+      socket.off('chat message');
+    };
+  }, []);
+
+  const sendMessage = (e) => {
+    e.preventDefault();
+    socket.emit('chat message', message);
+    setMessage('');
+  };
+
+  return (
+    <div className="chat">
+      <h2>Chat Room</h2>
+      <div className="messages">
+        {messages.map((msg, index) => (
+          <div key={index} className="message">
+            {msg}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={sendMessage}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type a message"
+          required
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+};
+
+export default Chat;
+Chat Page (frontend/src/pages/ChatPage.js)
+
+
+import React from 'react';
+import Chat from '../components/Chat';
+
+const ChatPage = () => {
+  return (
+    <div className="chat-page">
+      <Chat />
+    </div>
+  );
+};
+
+export default ChatPage;
+App Component (frontend/src/App.js)
+
+
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import ChatPage from './pages/ChatPage';
+
+const App = () => {
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+CSS for Chat Component (frontend/src/index.css)
+
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chat {
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.messages {
+  border: 1px solid #ccc;
+  height: 300px;
+  overflow-y: scroll;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.message {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+form {
+  display: flex;
+  justify-content: center;
+}
+
+input {
+  padding: 10px;
+  width: 70%;
+  margin-right: 10px;
+}
+
+button {
+  padding: 10px;
+}
+Running the Project
+Backend: Ensure MongoDB is running and start the backend server.
+
+ecommerce-website/
+├── backend/
+│   ├── app.js
+│   ├── models/
+│   │   └── productModel.js
+│   ├── routes/
+│   │   └── productRoutes.js
+│   ├── controllers/
+│   │   └── productController.js
+│   ├── config/
+│   │   └── db.js
+│   ├── sockets/
+│   │   └── chat.js
+│   └── package.json
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Product.js
+│   │   │   ├── Chat.js
+│   │   ├── pages/
+│   │   │   ├── HomePage.js
+│   │   │   ├── ChatPage.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   └── package.json
+└── README.md
+Backend (backend/)
+Install Dependencies
+
+bash
+Copy code
+cd backend
+npm install socket.io
+Chat Socket Setup (backend/sockets/chat.js)
+
+javascript
+Copy code
+module.exports = function (io) {
+  io.on('connection', (socket) => {
+    console.log('New client connected');
+
+    socket.on('chat message', (msg) => {
+      io.emit('chat message', msg);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Client disconnected');
+    });
+  });
+};
+Update Express Server Setup (backend/app.js)
+
+javascript
+Copy code
+const express = require('express');
+const http = require('http');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const productRoutes = require('./routes/productRoutes');
+const socketIo = require('socket.io');
+const chatSocket = require('./sockets/chat');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+connectDB();
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use('/api/products', productRoutes);
+
+// Initialize sockets
+chatSocket(io);
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+Frontend (frontend/)
+Install Dependencies
+
+bash
+Copy code
+cd frontend
+npm install socket.io-client
+Chat Component (frontend/src/components/Chat.js)
+
+javascript
+Copy code
+import React, { useState, useEffect } from 'react';
+import io from 'socket.io-client';
+
+const socket = io('http://localhost:5000');
+
+const Chat = () => {
+  const [messages, setMessages] = useState([]);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    socket.on('chat message', (msg) => {
+      setMessages((prevMessages) => [...prevMessages, msg]);
+    });
+
+    return () => {
+      socket.off('chat message');
+    };
+  }, []);
+
+  const sendMessage = (e) => {
+    e.preventDefault();
+    socket.emit('chat message', message);
+    setMessage('');
+  };
+
+  return (
+    <div className="chat">
+      <h2>Chat Room</h2>
+      <div className="messages">
+        {messages.map((msg, index) => (
+          <div key={index} className="message">
+            {msg}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={sendMessage}>
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Type a message"
+          required
+        />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+  );
+};
+
+export default Chat;
+Chat Page (frontend/src/pages/ChatPage.js)
+
+javascript
+Copy code
+import React from 'react';
+import Chat from '../components/Chat';
+
+const ChatPage = () => {
+  return (
+    <div className="chat-page">
+      <Chat />
+    </div>
+  );
+};
+
+export default ChatPage;
+App Component (frontend/src/App.js)
+
+javascript
+Copy code
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+import ChatPage from './pages/ChatPage';
+
+const App = () => {
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/chat" element={<ChatPage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+CSS for Chat Component (frontend/src/index.css)
+
+css
+Copy code
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chat {
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.messages {
+  border: 1px solid #ccc;
+  height: 300px;
+  overflow-y: scroll;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.message {
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+}
+
+form {
+  display: flex;
+  justify-content: center;
+}
+
+input {
+  padding: 10px;
+  width: 70%;
+  margin-right: 10px;
+}
+
+button {
+  padding: 10px;
+}
+Running the Project
+Backend: Ensure MongoDB is running and start the backend server.
+
+
+cd backend
+node app.js
+Frontend: Start the frontend development server.
+
+cd frontend
+npm start
+node app.js
+Frontend: Start the frontend development server.
+
+cd frontend
+npm start
