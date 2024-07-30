@@ -1,0 +1,210 @@
+ecommerce-website/
+├── backend/
+│   ├── app.js
+│   ├── models/
+│   │   └── productModel.js
+│   ├── routes/
+│   │   └── productRoutes.js
+│   ├── controllers/
+│   │   └── productController.js
+│   └── config/
+│       └── db.js
+│   └── package.json
+├── frontend/
+│   ├── public/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── Product.js
+│   │   ├── pages/
+│   │   │   └── HomePage.js
+│   │   ├── App.js
+│   │   ├── index.js
+│   └── package.json
+└── README.md
+mkdir backend
+cd backend
+npm init -y
+npm install express mongoose body-parser cors
+const mongoose = require('mongoose');
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect('mongodb://localhost:27017/ecommerceDB', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    });
+    console.log('MongoDB connected');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+const mongoose = require('mongoose');
+
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  price: { type: Number, required: true },
+  image: { type: String, required: true }
+});
+
+const Product = mongoose.model('Product', productSchema);
+
+module.exports = Product;
+const Product = require('../models/productModel');
+
+const getProducts = async (req, res) => {
+  try {
+    const products = await Product.find({});
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+module.exports = {
+  getProducts
+};
+const express = require('express');
+const router = express.Router();
+const { getProducts } = require('../controllers/productController');
+
+router.get('/', getProducts);
+
+module.exports = router;
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const connectDB = require('./config/db');
+const productRoutes = require('./routes/productRoutes');
+
+const app = express();
+
+connectDB();
+
+app.use(cors());
+app.use(bodyParser.json());
+
+app.use('/api/products', productRoutes);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+npx create-react-app frontend
+cd frontend
+npm install axios
+import React from 'react';
+
+const Product = ({ product }) => {
+  return (
+    <div className="product">
+      <img src={product.image} alt={product.name} />
+      <h3>{product.name}</h3>
+      <p>{product.description}</p>
+      <p>${product.price}</p>
+    </div>
+  );
+};
+
+export default Product;
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import Product from '../components/Product';
+
+const HomePage = () => {
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      const { data } = await axios.get('http://localhost:5000/api/products');
+      setProducts(data);
+    };
+
+    fetchProducts();
+  }, []);
+
+  return (
+    <div className="home">
+      <h1>Products</h1>
+      <div className="product-list">
+        {products.map(product => (
+          <Product key={product._id} product={product} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default HomePage;
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import HomePage from './pages/HomePage';
+
+const App = () => {
+  return (
+    <Router>
+      <div className="App">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+};
+
+export default App;
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+import './index.css';
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home {
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.product-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.product {
+  border: 1px solid #ccc;
+  padding: 20px;
+  margin: 10px;
+  width: 200px;
+}
+
+.product img {
+  max-width: 100%;
+  height: auto;
+}
+
+.product h3 {
+  font-size: 1.2em;
+  margin: 10px 0;
+}
+cd backend
+node app.js
+cd frontend
+npm start
