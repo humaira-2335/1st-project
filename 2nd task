@@ -1,0 +1,241 @@
+├── app.js
+├── package.json
+├── views/
+│   ├── index.ejs
+│   ├── post.ejs
+│   ├── edit.ejs
+│   └── new.ejs
+└── public/
+    └── styles.css
+```
+
+### `app.js`
+
+```javascript
+const express = require('express');
+const mongoose = require('mongoose');
+const bodyParser = require('body-parser');
+const app = express();
+
+// Connect to MongoDB
+mongoose.connect('mongodb://localhost:27017/blogDB', { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static('public'));
+app.set('view engine', 'ejs');
+
+// Define Schema and Model
+const postSchema = new mongoose.Schema({
+  title: String,
+  content: String
+});
+const Post = mongoose.model('Post', postSchema);
+
+// Routes
+app.get('/', (req, res) => {
+  Post.find({}, (err, posts) => {
+    if (!err) {
+      res.render('index', { posts: posts });
+    }
+  });
+});
+
+app.get('/posts/:id', (req, res) => {
+  Post.findById(req.params.id, (err, post) => {
+    if (!err) {
+      res.render('post', { post: post });
+    }
+  });
+});
+
+app.get('/edit/:id', (req, res) => {
+  Post.findById(req.params.id, (err, post) => {
+    if (!err) {
+      res.render('edit', { post: post });
+    }
+  });
+});
+
+app.post('/edit/:id', (req, res) => {
+  Post.findByIdAndUpdate(req.params.id, {
+    title: req.body.title,
+    content: req.body.content
+  }, (err) => {
+    if (!err) {
+      res.redirect('/');
+    }
+  });
+});
+
+app.post('/delete/:id', (req, res) => {
+  Post.findByIdAndRemove(req.params.id, (err) => {
+    if (!err) {
+      res.redirect('/');
+    }
+  });
+});
+
+app.get('/new', (req, res) => {
+  res.render('new');
+});
+
+app.post('/new', (req, res) => {
+  const newPost = new Post({
+    title: req.body.title,
+    content: req.body.content
+  });
+  newPost.save((err) => {
+    if (!err) {
+      res.redirect('/');
+    }
+  });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+```
+
+### `views/index.ejs`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Blog</title>
+</head>
+<body>
+  <h1>Blog Posts</h1>
+  <a href="/new">Create New Post</a>
+  <ul>
+    <% posts.forEach(post => { %>
+      <li>
+        <a href="/posts/<%= post._id %>"><%= post.title %></a>
+        <a href="/edit/<%= post._id %>">Edit</a>
+        <form action="/delete/<%= post._id %>" method="POST" style="display: inline;">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    <% }); %>
+  </ul>
+</body>
+</html>
+```
+
+### `views/post.ejs`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/styles.css">
+  <title><%= post.title %></title>
+</head>
+<body>
+  <h1><%= post.title %></h1>
+  <p><%= post.content %></p>
+  <a href="/">Back to Home</a>
+</body>
+</html>
+```
+
+### `views/edit.ejs`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Edit Post</title>
+</head>
+<body>
+  <h1>Edit Post</h1>
+  <form action="/edit/<%= post._id %>" method="POST">
+    <input type="text" name="title" value="<%= post.title %>">
+    <textarea name="content"><%= post.content %></textarea>
+    <button type="submit">Save</button>
+  </form>
+  <a href="/">Back to Home</a>
+</body>
+</html>
+```
+
+### `views/new.ejs`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/styles.css">
+  <title>New Post</title>
+</head>
+<body>
+  <h1>Create New Post</h1>
+  <form action="/new" method="POST">
+    <input type="text" name="title" placeholder="Title">
+    <textarea name="content" placeholder="Content"></textarea>
+    <button type="submit">Create</button>
+  </form>
+  <a href="/">Back to Home</a>
+</body>
+</html>
+```
+
+### `public/styles.css`
+
+```css
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  margin-top: 20px;
+}
+
+a {
+  text-decoration: none;
+  color: blue;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin: 10px 0;
+}
+
+form {
+  display: inline;
+}
+```
+
+### Running the Project
+
+1. Ensure MongoDB is running on your local machine.
+2. Start the server:
+
+```bash
+node app.js
+```
+
+3. Open your browser and navigate to `http://localhost:3000`.
+
+You should now have a fully functional blog website where you can create, read, update, and delete posts.
